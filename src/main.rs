@@ -1,3 +1,6 @@
+
+mod board;
+
 fn main() {
-    println!("Hello, world!");
+    let mut board : [[Square;8];8];
 }
