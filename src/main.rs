@@ -1,4 +1,6 @@
-use std::fmt;
+use core::panic;
+use std::{collections::btree_map::Range, fmt};
+
 
 #[derive(Copy, Clone)]
 enum Color {
@@ -53,7 +55,6 @@ struct Game {
     board: [Square; 64],
 }
 
-//board : [Square::Empty; 64]
 impl Default for Game {
     fn default() -> Self {
         Game {
@@ -63,7 +64,7 @@ impl Default for Game {
 }
 
 impl Game {
-    fn GetPos(&self, a: &str) -> usize {
+    fn Get_pos(&self, a: &str) -> usize {
         if a.len() != 2 {
             return 0; // throw ?
         }
@@ -81,114 +82,133 @@ impl Game {
             "h" => col = 7,
             _ => col = 8, // Error throwing?
         }
+        if row+col > 63 {
+            println!("Alrighjt so the value of the array larger than the size of the board so that isnt okay");
+            return 0;
 
+        }
         return usize::from(row + col);
     }
 
     fn Setup(&mut self) {
         // King
-        self.board[self.GetPos("e1")] = Square::Value(
+        self.board[self.Get_pos("e1")] = Square::Value(
             Piece::King,
             Color::White,
         );
 
-        self.board[self.GetPos("e8")] = Square::Value(
+        self.board[self.Get_pos("e8")] = Square::Value(
             Piece::King,
             Color::Black,
         );
 
         // Queen
-        self.board[self.GetPos("d1")] = Square::Value(
+        self.board[self.Get_pos("d1")] = Square::Value(
             Piece::Queen,
             Color::White,
         );
 
-        self.board[self.GetPos("d8")] = Square::Value(
+        self.board[self.Get_pos("d8")] = Square::Value(
             Piece::Queen,
             Color::Black,
         );
 
         // Rooks
-        self.board[self.GetPos("a1")] = Square::Value(
+        self.board[self.Get_pos("a1")] = Square::Value(
             Piece::Rook,
             Color::White,
         );
 
-        self.board[self.GetPos("a8")] = Square::Value(
+        self.board[self.Get_pos("a8")] = Square::Value(
             Piece::Rook,
             Color::Black,
         );
 
-        self.board[self.GetPos("h1")] = Square::Value(
+        self.board[self.Get_pos("h1")] = Square::Value(
             Piece::Rook,
             Color::White,
         );
 
-        self.board[self.GetPos("h8")] = Square::Value(
+        self.board[self.Get_pos("h8")] = Square::Value(
             Piece::Rook,
             Color::Black,
         );
 
         // Knights
-        self.board[self.GetPos("b1")] = Square::Value(
+        self.board[self.Get_pos("b1")] = Square::Value(
             Piece::Knight,
             Color::White,
         );
 
-        self.board[self.GetPos("b8")] = Square::Value(
+        self.board[self.Get_pos("b8")] = Square::Value(
             Piece::Knight,
             Color::Black,
         );
 
-        self.board[self.GetPos("g1")] = Square::Value(
+        self.board[self.Get_pos("g1")] = Square::Value(
             Piece::Knight,
             Color::White,
         );
 
-        self.board[self.GetPos("g8")] = Square::Value(
+        self.board[self.Get_pos("g8")] = Square::Value(
             Piece::Knight,
             Color::Black,
         );
 
         // Bishops
-        self.board[self.GetPos("c1")] = Square::Value(
+        self.board[self.Get_pos("c1")] = Square::Value(
             Piece::Bishop,
             Color::White,
         );
 
-        self.board[self.GetPos("c8")] = Square::Value(
+        self.board[self.Get_pos("c8")] = Square::Value(
             Piece::Bishop,
             Color::Black,
         );
 
-        self.board[self.GetPos("f1")] = Square::Value(
+        self.board[self.Get_pos("f1")] = Square::Value(
             Piece::Bishop,
             Color::White,
         );
 
-        self.board[self.GetPos("f8")] = Square::Value(
+        self.board[self.Get_pos("f8")] = Square::Value(
             Piece::Bishop,
             Color::Black,
         );
 
         for n in 0..8 {
-            self.board[self.GetPos("a2") + n] = Square::Value(
+            self.board[self.Get_pos("a2") + n] = Square::Value(
                 Piece::Pawn,
                 Color::White,
             );
 
-            self.board[self.GetPos("a7") + n] = Square::Value(
+            self.board[self.Get_pos("a7") + n] = Square::Value(
                 Piece::Pawn,
                 Color::Black,
             );
         }
     }
 
-    fn isMoveValid(&mut self, origin: Square, target1: Square) -> bool {
-        let mut target_is_not_empty = false;
-        match target1 {
-            Square::Empty => target_is_not_empty = true,
-            _ => (),
+    fn isMoveValid(&mut self, origin: Square, target: Square, origin_str : &str, target_str: &str) -> bool {
+        let mut is_black = false;
+        let mut target_is_black = false;
+        let mut target_is_emtpy = false;
+        match origin {
+            Square::Value(_, Color::Black)=> is_black = true,
+            Square::Value(_, Color::White)=> is_black = false,
+            Square::Empty => return false
+        }
+
+        match target{
+            Square::Empty => target_is_emtpy = true,
+            Square::Value(_, Color::Black)=> target_is_black = true,
+            Square::Value(_, Color::White)=> target_is_black = false,
+        }
+        if !target_is_emtpy{
+            if (is_black == target_is_black){
+                // Fuck
+                return false;
+            }    
         }
 
         match origin {
@@ -196,15 +216,15 @@ impl Game {
             Square::Value(
                 Piece::King,
                 _,
-            ) => (),
+            ) => return  self.is_lateral_move_valid(origin, target, origin_str, target_str, 1) ||  self.is_diagonal_move_valid(origin, target, origin_str, target_str, 1),
             Square::Value(
                 Piece::Queen,
                 _,
-            ) => (),
+            ) => return self.is_lateral_move_valid(origin, target, origin_str, target_str, 8) ||  self.is_diagonal_move_valid(origin, target, origin_str, target_str, 8),
             Square::Value(
                 Piece::Bishop,
                 _,
-            ) => (),
+            ) => return self.is_diagonal_move_valid(origin, target, origin_str, target_str, 8),
             Square::Value(
                 Piece::Knight,
                 _,
@@ -212,17 +232,83 @@ impl Game {
             Square::Value(
                 Piece::Rook,
                 _,
-            ) => (),
+            ) => return self.is_lateral_move_valid(origin, target, origin_str, target_str, 8),
             Square::Value(
                 Piece::Pawn,
                 Color::White,
-            ) => (),
+            ) => return self.is_lateral_move_valid(origin, target, origin_str, target_str, 2),
             Square::Value(
                 Piece::Pawn,
                 Color::Black,
-            ) => (),
+            ) => return self.is_lateral_move_valid(origin, target, origin_str, target_str, 2), // Pawns need to be dealt with seperately, specifically the enpassant
         }
-        return true;
+        return false;
+    }
+
+       
+    fn is_lateral_move_valid(&mut self, origin: Square, target1: Square, origin_str : &str, target_str: &str, max_distance : i32) -> bool{
+        let origin_val = self.Get_pos(origin_str);
+        let target_val = self.Get_pos(target_str);
+
+        let move_row = (origin_val as i32 - target_val as i32)%8;
+        let distance = ((origin_val as i32 - target_val as i32));
+        
+        let mut delta;
+        if move_row == 0 {
+           delta = if ((origin_val as i32 - target_val as i32) > 0) {-8} else {8};
+        }
+        else if distance.abs() < 8  {
+            delta = if ((origin_val as i32 - target_val as i32) > 0) {-1} else {1};
+        }
+        else{
+            return false;
+        }
+
+        for jump in 1..=max_distance {
+            let square = origin_val as i32 + jump * delta;
+            if square == target_val as i32{
+                return true;
+            }
+            
+            match self.board[square as usize]{
+                Square::Empty => (),
+                _ => return false,
+            }
+        }
+
+        return false;
+    }
+
+    fn is_diagonal_move_valid(&mut self, origin: Square, target1: Square, origin_str : &str, target_str: &str, max_distance : i32) -> bool{
+        let origin_val = self.Get_pos(origin_str);
+        let target_val = self.Get_pos(target_str);
+
+        let move_left_delta = (origin_val as i32 - target_val as i32)%7;
+        let move_right_delta = (origin_val as i32 - target_val as i32)%9;
+
+        let mut delta = 0;
+        if move_left_delta == 0{
+            delta = if ((origin_val as i32 - target_val as i32) > 0) {-7} else {7};
+        }
+        else if move_right_delta == 0 {
+            delta = if ((origin_val as i32 - target_val as i32) > 0) {-9} else {9};
+        }
+        else{
+            return false;
+        }
+        
+        for jump in 1..max_distance {
+            let square = origin_val as i32 + jump * delta;
+            if square == target_val as i32{
+                return true;
+            }
+            
+            match self.board[square as usize]{
+                Square::Empty => (),
+                _ => return false,
+            }
+        }
+        return false;
     }
 
     fn Move(&mut self, moveStr: &str) {
@@ -231,13 +317,37 @@ impl Game {
         }
         let (origin_str, target_str) = moveStr.split_at(2);
 
-        let mut origin = self.board[self.GetPos(origin_str)];
-        let mut target = self.board[self.GetPos(target_str)];
+        let mut origin = self.board[self.Get_pos(origin_str)];
+        let mut target = self.board[self.Get_pos(target_str)];
 
-        if self.isMoveValid(origin, target) {
-            self.board[self.GetPos(target_str)]  = self.board[self.GetPos(origin_str)];
-            self.board[self.GetPos(origin_str)] = Square::Empty;
+        if self.isMoveValid(origin, target, origin_str, target_str) {
+            println!("{} is valid", moveStr);
+            self.board[self.Get_pos(target_str)]  = self.board[self.Get_pos(origin_str)];
+            self.board[self.Get_pos(origin_str)] = Square::Empty;
         }
+        else{
+            println!("{} is not valid", moveStr);
+        }
+    }
+
+    fn Render(&self) {
+
+        println!("    a  b  c  d  e  f  g  h    ");
+        print!(" 1 ");
+        for (i, square) in self.board.iter().enumerate() {
+            if (i) % 8 == 0 {
+                if i != 0{
+                    println!(" {} ", (i/8));
+                    print!(" {} ", (i/8)+1);
+                }
+                
+            }
+            print!("{}", square);
+            
+        }
+        println!("");
+        println!("    a  b  c  d  e  f  g  h    ");
+
     }
 }
 
@@ -246,17 +356,18 @@ fn main() {
 
     game.Setup();
 
-    game.Move("e2e4");
-    game.Move("e7e5");
+    game.Move("e2e3");
+    game.Move("e7e6");
+    game.Render();
 
-    game.Move("e1d1");
+    game.Move("e6e5");
+    game.Render();
 
-    for (i, square) in game.board.iter().enumerate() {
-        print!("{}", square);
-        if (i + 1) % 8 == 0 {
-            println!();
-        }
-    }
+    game.Move("e5e3");
+    game.Render();
+    
+    game.Move("e3d4");
+    game.Render();
 
     println!("Hello Short ♔!");
 }
