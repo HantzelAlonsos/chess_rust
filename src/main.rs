@@ -53,12 +53,18 @@ impl fmt::Display for Square {
 #[derive(Copy, Clone)]
 struct Game {
     board: [Square; 64],
+    en_passant_square : i32,
+    en_passant_turn : i32,
+    current_turn : i32,
 }
 
 impl Default for Game {
     fn default() -> Self {
         Game {
             board: [Square::Empty; 64],
+            en_passant_square : -1,
+            en_passant_turn : -1,
+            current_turn : 0,
         }
     }
 }
@@ -193,6 +199,7 @@ impl Game {
         let mut is_black = false;
         let mut target_is_black = false;
         let mut target_is_emtpy = false;
+        self.current_turn = self.current_turn + 1;
         match origin {
             Square::Value(_, Color::Black)=> is_black = true,
             Square::Value(_, Color::White)=> is_black = false,
@@ -228,7 +235,7 @@ impl Game {
             Square::Value(
                 Piece::Knight,
                 _,
-            ) => (),
+            ) => return self.is_knight_move_valid(origin, target, origin_str, target_str),
             Square::Value(
                 Piece::Rook,
                 _,
@@ -236,13 +243,89 @@ impl Game {
             Square::Value(
                 Piece::Pawn,
                 Color::White,
-            ) => return self.is_lateral_move_valid(origin, target, origin_str, target_str, 2),
+            ) => return self.is_pawn_move_valid(origin, target, origin_str, target_str),
             Square::Value(
                 Piece::Pawn,
                 Color::Black,
-            ) => return self.is_lateral_move_valid(origin, target, origin_str, target_str, 2), // Pawns need to be dealt with seperately, specifically the enpassant
+            ) => return self.is_pawn_move_valid(origin, target, origin_str, target_str), // Pawns need to be dealt with seperately, specifically the enpassant
         }
         return false;
+    }
+
+    fn is_pawn_move_valid(&mut self, origin: Square, target: Square, origin_str : &str, target_str: &str) -> bool{
+    
+        match origin{
+            Square::Value(Piece::Pawn, _)=>(),
+            _ => return false, // Thius will never happen but you never know
+        }
+        
+        let origin_val = self.Get_pos(origin_str);
+        let target_val = self.Get_pos(target_str); 
+
+        let delta = origin_val as i32 - target_val as i32;
+        
+        if delta.abs() == 8 {
+            return self.is_lateral_move_valid(origin, target, origin_str, target_str, 1)
+        }
+
+        match (delta.abs(), origin, target){
+            (7, Square::Value(_, Color::Black), Square::Value(_, Color::White)) => return true,
+            (9, Square::Value(_, Color::Black), Square::Value(_, Color::White)) => return true,
+            (7, Square::Value(_, Color::White), Square::Value(_, Color::Black)) => return true,
+            (9, Square::Value(_, Color::White), Square::Value(_, Color::Black)) => return true,
+            _ => (),
+        }
+
+        let target_is_en_passant = if target_val as i32 == self.en_passant_square  {true} else {false};
+        let en_passant_was_previous_turn = if  self.current_turn - self.en_passant_turn  == 1  {true} else {false};
+        
+        match (target_is_en_passant, en_passant_was_previous_turn,  origin, target){
+            (true, true ,Square::Value(_, Color::Black), Square::Empty) => return true,
+            (true, true ,Square::Value(_, Color::White), Square::Empty) => return true,
+            _ => (),
+        }
+        
+        println!("{}", target_val);
+        println!("{}", self.current_turn);
+        
+
+        println!("{}", self.en_passant_square);
+        println!("{}", self.en_passant_turn);
+        
+        println!("{}", en_passant_was_previous_turn);
+        println!("{}", target_is_en_passant);
+
+        if delta.abs() == 16{
+            if self.is_lateral_move_valid(origin, target, origin_str, target_str, 2){
+                self.en_passant_square = origin_val as i32 - delta/2;
+                self.en_passant_turn = self.current_turn;
+                return true;
+            }
+        }
+
+
+        return false;
+    }
+
+    fn is_knight_move_valid(&mut self, origin: Square, target1: Square, origin_str : &str, target_str: &str) -> bool{
+        
+        let origin_val = self.Get_pos(origin_str);
+        let target_val = self.Get_pos(target_str);
+
+        let delta = origin_val as i32 - target_val as i32;
+
+        match delta {
+            15=>(),
+            17=>(),
+            10=>(),
+            -6=>(), 
+            -15=>(),
+            -17=>(),
+            -10=>(),
+            6=>(),
+            _=> return false,
+        }  
+        return true;
     }
 
        
@@ -356,17 +439,33 @@ fn main() {
 
     game.Setup();
 
-    game.Move("e2e3");
-    game.Move("e7e6");
-    game.Render();
-
-    game.Move("e6e5");
-    game.Render();
-
-    game.Move("e5e3");
-    game.Render();
     
-    game.Move("e3d4");
+    game.Move("e2e3");
+    game.Render();
+
+    game.Move("d2d4");
+    game.Render();
+
+    game.Move("d7d6");
+    game.Render();
+
+    
+    game.Move("a2a4");
+    game.Render();
+
+    game.Move("a4a5");
+    game.Render();
+
+    game.Move("b7b5");
+    game.Render();
+
+    game.Move("a5b6");
+    game.Render();
+
+    game.Move("h7h5");
+    game.Move("h5h4");
+    game.Move("g2g4");
+    game.Move("h4g3");
     game.Render();
 
     println!("Hello Short ♔!");
